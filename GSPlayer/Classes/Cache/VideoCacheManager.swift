@@ -49,5 +49,52 @@ public enum VideoCacheManager {
             try fileManager.removeItem(atPath: filePath)
         }
     }
-    
+
+    public static func cacheLocalFile(localURL: URL, remoteURL url: URL) throws {
+      let fileManager = FileManager.default
+
+      if !fileManager.fileExists(atPath: localURL.path) {
+        throw NSError(
+            domain: "me.gesen.player.cache",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Local file doesn't exist"]
+        )
+      }
+
+      let localFileAttributes = try fileManager.attributesOfItem(atPath: localURL.path)
+      let localFileSize =  Int(truncatingIfNeeded: localFileAttributes[FileAttributeKey.size] as! Int64)
+
+      let filePath = VideoCacheManager.cachedFilePath(for: url)
+      let fileDirectory = filePath.deletingLastPathComponent
+
+      if !fileManager.fileExists(atPath: fileDirectory) {
+          try fileManager.createDirectory(
+              atPath: fileDirectory,
+              withIntermediateDirectories: true,
+              attributes: nil
+          )
+      }
+
+      if fileManager.fileExists(atPath: filePath) {
+          try fileManager.removeItem(atPath: filePath)
+      }
+
+      let configurationFilePath = VideoCacheConfiguration.configurationFilePath(for: filePath)
+
+      if fileManager.fileExists(atPath: configurationFilePath) {
+          try fileManager.removeItem(atPath: configurationFilePath)
+      }
+
+      var configuration = try VideoCacheConfiguration.configuration(for: filePath)
+
+      configuration.info = .init(
+        contentLength: localFileSize,
+        contentType: "",
+        isByteRangeAccessSupported: false
+      )
+
+      try fileManager.copyItem(atPath: localURL.path, toPath: filePath)
+      configuration.add(fragment: .init(location: 0, length: localFileSize))
+      configuration.save()
+    }
 }
