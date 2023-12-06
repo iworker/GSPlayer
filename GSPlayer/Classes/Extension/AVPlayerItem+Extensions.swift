@@ -52,7 +52,7 @@ extension AVPlayerItem {
             let configuration = try? VideoCacheManager.cachedConfiguration(for: url)
             else { return false }
         
-        return configuration.downloadedByteCount >= 1024 * 768
+        return configuration.downloadedByteCount >= 1024 * 10
     }
     
     convenience init(loader url: URL) {
